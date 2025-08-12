@@ -17,7 +17,7 @@
   - [✖️] Upload classical dataset
 
 ## Dataset
-We use the UDIS-D dataset to train and evaluate our method. Please refer to [UDIS](https://github.com/nie-lang/UnsupervisedDeepImageStitching) for more details about this dataset. For cross-scenario validation, we have assembled 147 pairs of traditional image stitching pairs, and the associated dataset is available for download [here](https://drive.google.com/drive/folders/1U3kcNM7n_txQ69fjw7wT9EUyAVQZjDxC?usp=drive_link).
+We use the UDIS-D dataset to train and evaluate our method. Please refer to [UDIS](https://github.com/nie-lang/UnsupervisedDeepImageStitching) for more details about this dataset. For cross-scenario validation, we have assembled 147 pairs of traditional image stitching pairs, and the associated dataset is available for download [here](https://drive.google.com/file/d/1_F7M7DN7K4BjZPEcez7XS6TUpE3iEX8f/view?usp=drive_link).
 
 
 ## Code
@@ -45,7 +45,7 @@ python train.py --woCoefNet_path your_model_path
 ```
 
 ## Testing 
-Our pretrained models can be available at [Google Drive]().
+Our pretrained models can be available at [Google Drive](https://drive.google.com/drive/folders/1U3kcNM7n_txQ69fjw7wT9EUyAVQZjDxC?usp=drive_link).
 
 ```
 cd ./wCoefNet/Codes/
