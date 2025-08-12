@@ -6,6 +6,10 @@
 <p align="center"><sup>§</sup> Zhejiang University</p> 
 <p align="center"><sup>¶</sup> Beijing Jiaotong University</p>
 
+
+
+![image](./framework.jpg)
+
 ## TODO
 
 - **Model**
@@ -15,7 +19,6 @@
 - **Dataset**
   - [✖️] Upload classical dataset
 
-![image](./framework.jpg)
 ## Dataset
 We use the UDIS-D dataset to train and evaluate our method. Please refer to [UDIS](https://github.com/nie-lang/UnsupervisedDeepImageStitching) for more details about this dataset. For cross-scenario validation, we have assembled 147 pairs of traditional image stitching pairs, and the associated dataset is available for download [here]().
 
