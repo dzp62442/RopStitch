@@ -1,4 +1,4 @@
-<img width="1515" height="621" alt="image" src="https://github.com/user-attachments/assets/53a41536-73f6-439f-ad3e-3a5a9ef23a82" /># <p align="center">Robust Image Stitching with Optimal Plane</p>
+# <p align="center">Robust Image Stitching with Optimal Plane</p>
 <p align="center">Lang Nie<sup>∗</sup>, Yuan Mei<sup>†</sup>, Kang Liao<sup>‡</sup>, Yunqiu Xu<sup>§</sup>, Chunyu Lin<sup>¶</sup>, Bin Xiao<sup>∗</sup></p> 
 <p align="center"><sup>∗</sup> Chongqing Key Laboratory of Image Cognition, Chongqing University of Posts and Telecommunications</p> 
 <p align="center"><sup>†</sup> The Hong Kong Polytechnic University</p> 
@@ -7,9 +7,7 @@
 <p align="center"><sup>¶</sup> Beijing Jiaotong University</p>
 
 
-
 ![image](./framework.jpg)
-
 ## TODO
 
 - **Model**
