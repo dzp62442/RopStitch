@@ -96,14 +96,14 @@ class TestDataset(Dataset):
         input2 = input2.astype(dtype=np.float32)
         input2 = (input2 / 127.5) - 1.0
 
-        # in case of OOM
-        max_range = 2000
-        if max(input1.shape[0],input1.shape[1]) > max_range:
-            # print('the original image size is too big, scale the image max size in 2000 pixel range.')
-            scale_width = int((max_range / max(input1.shape[1],input1.shape[0])) * input1.shape[0])
-            scale_hight = int((max_range / max(input1.shape[1],input1.shape[0])) * input1.shape[1])
-            input1 = cv2.resize(input1,(scale_hight,scale_width), interpolation=cv2.INTER_AREA)
-            input2 = cv2.resize(input2,(scale_hight,scale_width), interpolation=cv2.INTER_AREA)
+        # # in case of OOM
+        # max_range = 2000
+        # if max(input1.shape[0],input1.shape[1]) > max_range:
+        #     # print('the original image size is too big, scale the image max size in 2000 pixel range.')
+        #     scale_width = int((max_range / max(input1.shape[1],input1.shape[0])) * input1.shape[0])
+        #     scale_hight = int((max_range / max(input1.shape[1],input1.shape[0])) * input1.shape[1])
+        #     input1 = cv2.resize(input1,(scale_hight,scale_width), interpolation=cv2.INTER_AREA)
+        #     input2 = cv2.resize(input2,(scale_hight,scale_width), interpolation=cv2.INTER_AREA)
 
         if input1.shape != input2.shape:
             # print('input2:',input1.shape,input2.shape)
@@ -121,6 +121,7 @@ class TestDataset(Dataset):
     def __len__(self):
 
         return len(self.datas['input1']['image'])
+
 
 
 
