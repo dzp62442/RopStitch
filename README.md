@@ -53,7 +53,7 @@ cd ./wCoefNet/Codes/
 python test.py --woCoefNet_path your_model_path
 ```
 
-## Finetuning
+## Fine-tuning
 
 ```
 cd ./wCoefNet/Codes/
