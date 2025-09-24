@@ -15,6 +15,11 @@ import grid_res
 import random
 import torch.backends.cudnn as cudnn
 
+from sv_comp.dataset import MultiWarpDataset
+import yaml
+from omegaconf import OmegaConf
+from loguru import logger
+
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -147,15 +152,11 @@ def test(args):
     os.environ['CUDA_DEVICES_ORDER'] = "PCI_BUS_ID"
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-    # dataset
-    test_data = TestDataset(data_path=args.test_path)
-    #nl: set num_workers = the number of cpus
-    test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, num_workers=1, shuffle=False, drop_last=False)
-
-    # dataset
-    test_other_data = TestDataset(data_path=args.test_other_path)
-    #nl: set num_workers = the number of cpus
-    test_other_loader = DataLoader(dataset=test_other_data, batch_size=args.batch_size, num_workers=1, shuffle=False, drop_last=False)
+    # 加载数据集
+    sv_comp_cfg = OmegaConf.load('sv_comp/sv_comp.yaml')
+    with open('sv_comp/intrinsics.yaml', 'r', encoding='utf-8') as file:
+        intrinsics = yaml.safe_load(file)
+    dataset = MultiWarpDataset(config=sv_comp_cfg, intrinsics=intrinsics, is_train=False)
 
     # define the network
     net = Network()#build_model(args.model_name)
@@ -185,107 +186,84 @@ def test(args):
     
 
     print("##################start testing#######################")
-    # create folders if it dose not exist
 
-    #############################
-    path_ave_other_fusion = '../ave_other_fusion/'
-    if not os.path.exists(path_ave_other_fusion):
-        os.makedirs(path_ave_other_fusion)
-
-    ssim_other_list = []
-    psnr3_other_list = []
-    net.eval()
-    for i, batch_value in enumerate(test_other_loader):
-
-        inpu1_tesnor = batch_value[0].float()
-        inpu2_tesnor = batch_value[1].float()
-
-        if torch.cuda.is_available():
-            inpu1_tesnor = inpu1_tesnor.cuda()
-            inpu2_tesnor = inpu2_tesnor.cuda()
-
-        if inpu1_tesnor.shape != inpu2_tesnor.shape:
-            print('input1 and input2 have different size!')
-            continue
-
-
-        best_alpha, best_ssim, best_psnr, best_img = ternary_search(net, coef_net, inpu1_tesnor, inpu2_tesnor, low=-1.0, high=2.0, max_iter=args.max_epoch,  max_out_height=4000, tol=1e-6)
-
-        path = path_ave_other_fusion + str(i+1).zfill(6) + ".jpg"
-        cv2.imwrite(path, best_img)
-        ssim_other_list.append(best_ssim)
-        psnr3_other_list.append(best_psnr)
-
-        print('i = {}, best alpha = {}, best_ssim:{}'.format( i+1, best_alpha, best_ssim))
-        torch.cuda.empty_cache()
-    
-
-    psnr3_other_list.sort(reverse = True)
-    list_len = len(psnr3_other_list)
-    print("top 30%", np.mean(psnr3_other_list[:int(list_len*0.3)]))
-    print("top 30~60%", np.mean(psnr3_other_list[int(list_len*0.3):int(list_len*0.6)]))
-    print("top 60~100%", np.mean(psnr3_other_list[int(list_len*0.6):]))
-    print('average psnr:', np.mean(psnr3_other_list))
-
-    ssim_other_list.sort(reverse = True)
-    print("top 30%", np.mean(ssim_other_list[:int(list_len*0.3)]))
-    print("top 30~60%", np.mean(ssim_other_list[int(list_len*0.3):int(list_len*0.6)]))
-    print("top 60~100%", np.mean(ssim_other_list[int(list_len*0.6):]))
-    print('average ssim:', np.mean(ssim_other_list))
-
-    #############################
-
-    path_ave_fusion = '../ave_fusion/'
+    path_ave_fusion = os.path.join(last_path, 'ave_fusion/')
     if not os.path.exists(path_ave_fusion):
         os.makedirs(path_ave_fusion)
-
 
     ssim3_list = []
     psnr3_list = []
     net.eval()
-    for i, batch_value in enumerate(test_loader):
 
+    for idx in range(len(dataset)):
+        print(f'------------------ {idx} / {len(dataset)} ------------------')
+        sample = dataset[idx]
+        input_imgs, input_masks = sample[0], sample[1]
+        middle_stitch_results = None  # 中间拼接结果
+        origin_w, origin_h = input_imgs[0].shape[1], input_imgs[0].shape[0]
+        os.makedirs(os.path.join(path_ave_fusion, str(idx)), exist_ok=True)
 
-        inpu1_tesnor = batch_value[0].float()
-        inpu2_tesnor = batch_value[1].float()
+        batch_psnr_avg, batch_ssim_avg = 0, 0  # 当前batch的平均PSNR和SSIM
+        batch_psnr_list, batch_ssim_list = [], []  # 当前batch的PSNR和SSIM列表
 
-        if torch.cuda.is_available():
-            inpu1_tesnor = inpu1_tesnor.cuda()
-            inpu2_tesnor = inpu2_tesnor.cuda()
+        for j in range(sv_comp_cfg['input_img_num'] - 1):
+            # 生成待拼接的两路视频（单帧图像）
+            if j == 0:
+                inpu1_tesnor = dataset.to_tensor(input_imgs[j]).float()
+                inpu2_tesnor = dataset.to_tensor(input_imgs[j+1]).float()
+            else:
+                inpu1_tesnor = dataset.to_tensor(middle_stitch_results).float()
+                inpu2_tesnor = dataset.to_tensor(input_imgs[j+1]).float()
 
+            if torch.cuda.is_available():
+                inpu1_tesnor = inpu1_tesnor.cuda()
+                inpu2_tesnor = inpu2_tesnor.cuda()
 
-        best_alpha, best_ssim, best_psnr, best_img = ternary_search(net, coef_net, inpu1_tesnor, inpu2_tesnor, low=-1.0, high=2.0, max_iter=args.max_epoch,  max_out_height=4000, tol=1e-6)  
+            best_alpha, best_ssim, best_psnr, best_img = ternary_search(net, coef_net, inpu1_tesnor, inpu2_tesnor, low=-1.0, high=2.0, max_iter=args.max_epoch,  max_out_height=4000, tol=1e-6)  
 
-        path = path_ave_fusion + str(i+1).zfill(6) + ".jpg"
-        cv2.imwrite(path, best_img)
-        ssim3_list.append(best_ssim)
-        psnr3_list.append(best_psnr)
+            path = os.path.join(path_ave_fusion, str(idx), f"{sv_comp_cfg['input_img_num']}_{j+2}.jpg")
+            cv2.imwrite(path, best_img)
+            batch_ssim_list.append(best_ssim)
+            batch_psnr_list.append(best_psnr)
 
+            print('best alpha = {}, best_psnr:{}, best_ssim:{}'.format(best_alpha, best_psnr, best_ssim))
 
-        print('i = {}, best alpha = {}, best_ssim:{}'.format( i+1, best_alpha, best_ssim))
-        torch.cuda.empty_cache()
+            middle_stitch_results = cv2.resize(best_img, (origin_w, origin_h))
+            
+            torch.cuda.empty_cache()
+
+        batch_psnr_avg = np.mean(batch_psnr_list)
+        batch_ssim_avg = np.mean(batch_ssim_list)
+        print(f"batch_psnr_list: {batch_psnr_list}, batch_psnr_avg: {batch_psnr_avg}")
+        print(f"batch_ssim_list: {batch_ssim_list}, batch_ssim_avg: {batch_ssim_avg}")
+
+        psnr3_list.append(batch_psnr_avg)
+        ssim3_list.append(batch_ssim_avg)
+
+    total_samples = len(dataset)
+    failure_num = 0  # TODO: 计算失败数量
+    thirty_percent_index = int((total_samples-failure_num) * 0.3)
+    sixty_percent_index = int((total_samples-failure_num) * 0.6)
+    logger.info(f'Fail num: {failure_num}, total num: {total_samples}, success num: {total_samples-failure_num}')
     
-
     psnr3_list.sort(reverse = True)
-    psnr3_list_30 = psnr3_list[ : 331]
-    psnr3_list_60 = psnr3_list[331: 663]
-    psnr3_list_100 = psnr3_list[663: ]
-    print("top 30%", np.mean(psnr3_list_30))
-    print("top 30~60%", np.mean(psnr3_list_60))
-    print("top 60~100%", np.mean(psnr3_list_100))
-    print('average psnr:', np.mean(psnr3_list))
+    psnr3_list_30 = psnr3_list[0 : thirty_percent_index]
+    psnr3_list_60 = psnr3_list[thirty_percent_index: sixty_percent_index]
+    psnr3_list_100 = psnr3_list[sixty_percent_index: -1]
+    print("[psnr] top 30%: ", np.mean(psnr3_list_30))
+    print("[psnr] top 30~60%: ", np.mean(psnr3_list_60))
+    print("[psnr] top 60~100%: ", np.mean(psnr3_list_100))
+    logger.info('[psnr] average: {}'.format(np.mean(psnr3_list)))
 
     ssim3_list.sort(reverse = True)
-    ssim3_list_30 = ssim3_list[ : 331]
-    ssim3_list_60 = ssim3_list[331: 663]
-    ssim3_list_100 = ssim3_list[663: ]
-    print("top 30%", np.mean(ssim3_list_30))
-    print("top 30~60%", np.mean(ssim3_list_60))
-    print("top 60~100%", np.mean(ssim3_list_100))
-    print('average ssim:', np.mean(ssim3_list))
+    ssim3_list_30 = ssim3_list[0 : thirty_percent_index]
+    ssim3_list_60 = ssim3_list[thirty_percent_index: sixty_percent_index]
+    ssim3_list_100 = ssim3_list[sixty_percent_index: -1]
+    print("[ssim] top 30%: ", np.mean(ssim3_list_30))
+    print("[ssim] top 30~60%: ", np.mean(ssim3_list_60))
+    print("[ssim] top 60~100%: ", np.mean(ssim3_list_100))
+    logger.info('[ssim] average: {}'.format(np.mean(ssim3_list)))
     print("##################end testing#######################")
-
-
 
 
 if __name__=="__main__":
@@ -293,14 +271,8 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--gpu', type=str, default='0')
-    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--max_epoch', type=int, default=5)
     parser.add_argument('--woCoefNet_path', type=str, default='/home/dzp62442/Projects/RopStitch/models/epoch100_model.pth')
-
-    # /opt/data/private/nl/Data/UDIS-D/testing/  or  /opt/data/private/nl/Data/UDIS-D/training/
-    parser.add_argument('--test_path', type=str, default='/home/dzp62442/Projects/RopStitch/Dataset/UDIS-D/testing/')
-    parser.add_argument('--test_other_path', type=str, default='/home/dzp62442/Projects/RopStitch/Dataset/stitch_real/')
-
 
     print('<==================== Loading data ===================>\n')
 
