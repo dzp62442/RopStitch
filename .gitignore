@@ -1,0 +1,8 @@
+models/
+Dataset/
+__pycache__/
+*.pth
+*.zip
+*.tar
+events*
+*.mp4
