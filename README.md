@@ -8,6 +8,12 @@ pip install setuptools==65.5.1
 pip install -r requirements.txt
 ```
 
+进行与 ChatStitch SV-UDIS 的对比实验：
+```shell
+cd ./wCoefNet/Codes/
+python test_sv_comp.py
+```
+
 ---
 
 # <p align="center">Robust Image Stitching with Optimal Plane</p>
