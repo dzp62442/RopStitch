@@ -6,3 +6,5 @@ __pycache__/
 *.tar
 events*
 *.mp4
+ave_other_fusion/
+ave_fusion/

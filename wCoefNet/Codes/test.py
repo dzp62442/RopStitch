@@ -295,11 +295,11 @@ if __name__=="__main__":
     parser.add_argument('--gpu', type=str, default='0')
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--max_epoch', type=int, default=5)
-    parser.add_argument('--woCoefNet_path', type=str, default='/home/my123/pyProjects/RopStitch_FinalCode/woCoefNet/model_homo/epoch100_model.pth')
+    parser.add_argument('--woCoefNet_path', type=str, default='/home/dzp62442/Projects/RopStitch/models/epoch100_model.pth')
 
     # /opt/data/private/nl/Data/UDIS-D/testing/  or  /opt/data/private/nl/Data/UDIS-D/training/
-    parser.add_argument('--test_path', type=str, default='/media/my123/0d52819b-6878-4445-b5be-37548de0a05d/pyProjects/StitchUDIS/UDIS-D/testing/')
-    parser.add_argument('--test_other_path', type=str, default='/media/my123/0d52819b-6878-4445-b5be-37548de0a05d/pyProjects/StitchUDIS/stitch_real/')
+    parser.add_argument('--test_path', type=str, default='/home/dzp62442/Projects/RopStitch/Dataset/UDIS-D/testing/')
+    parser.add_argument('--test_other_path', type=str, default='/home/dzp62442/Projects/RopStitch/Dataset/stitch_real/')
 
 
     print('<==================== Loading data ===================>\n')
